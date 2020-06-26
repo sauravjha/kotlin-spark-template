@@ -1,5 +1,5 @@
 # kotlin-spark-template
-This is a code is to illustrate the kotlin code that uses spark and using Gradle to build the code
+This is a code is to illustrate the kotlin code that uses spark and uses Gradle to build the code
 
 ## How to get it running.
 
