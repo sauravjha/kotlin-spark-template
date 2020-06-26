@@ -1,0 +1,105 @@
+project_name: kotlin-spark-template
+
+containers:
+  build-env:
+    image: openjdk:8u181-jdk
+    ports:
+      - 4567:4567
+    volumes:
+      - local: .
+        container: /code
+        options: cached
+      - type: cache
+        name: gradle-cache
+        container: /home/container-user/.gradle
+    working_directory: /code
+    environment:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+    run_as_current_user:
+      enabled: true
+      home_directory: /home/container-user
+
+  docker-push-env:
+    build_directory: .batect/docker-push-env
+    volumes:
+      - local: .
+        container: /code
+        options: cached
+      - local: /var/run/docker.sock
+        container: /var/run/docker.sock
+    working_directory: /code
+
+tasks:
+  build:
+    description: Build the application.
+    group: Build tasks
+    run:
+      container: build-env
+      command: ./gradlew assembleDistForContainer
+
+  run:
+    description: Build the application.
+    group: Build tasks
+    run:
+      container: build-env
+      command: ./gradlew run
+
+  unitTest:
+    description: Run the unit tests.
+    group: Test tasks
+    run:
+      container: build-env
+      command: ./gradlew test
+
+  continuousUnitTest:
+    description: Run the unit tests and then re-run them when any code changes are detected.
+    group: Test tasks
+    run:
+      container: build-env
+      command: ./gradlew --continuous test
+
+  integrationTest:
+    description: Run the integration tests.
+    group: Test tasks
+    dependencies:
+      - database
+      - exchange-rate-service
+    run:
+      container: build-env
+      command: ./gradlew integrationTest
+
+  journeyTest:
+    description: Run the journey tests.
+    group: Test tasks
+    prerequisites:
+      - build
+    dependencies:
+      - international-transfers-service
+    run:
+      container: build-env
+      command: ./gradlew journeyTest
+
+  app:
+    description: Run the application.
+    group: Test tasks
+    prerequisites:
+      - build
+    run:
+      container: international-transfers-service
+      ports:
+        - local: 6001
+          container: 6001
+
+  shell:
+    description: Start a shell in the development environment.
+    group: Utility tasks
+    run:
+      container: build-env
+      command: bash
+
+  outdated:
+    description: Check for outdated dependencies.
+    group: Utility tasks
+    run:
+      container: build-env
+      command: ./gradlew dependencyUpdates -Drevision=release
